@@ -53,8 +53,6 @@ ORDER BY
 -- Despite substantial variation in the total number of transactions across time buckets, 
 -- the number of fraudulent transactions remains relatively stable, with approximately 500–600 fraud cases in each 50-step bucket.
 
-
-
 -- Type vs fraud
 SELECT
 type,
