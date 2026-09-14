@@ -55,7 +55,7 @@ ORDER BY
 
 
 
-
+-- Type vs Fraud
 SELECT
 type,
 COUNT(*) AS total_transactions,
@@ -67,8 +67,20 @@ GROUP BY type
 ORDER BY fraud_rate_percent DESC;
 -- Fraud occurred at TRANSFER and CASH_OUT transactions.
 
+SELECT
+    type,
+    isFraud,
+    COUNT(*) AS transaction_count,
+    ROUND(AVG(amount), 2) AS avg_amount,
+    ROUND(MIN(amount), 2) AS min_amount,
+    ROUND(MAX(amount), 2) AS max_amount
+FROM 'PaySim/PS_data.csv'
+GROUP BY type, isFraud
+ORDER BY type, isFraud;
+-- Fraudulent TRANSFER and CASH_OUT transactions had higher average transaction amounts than their non-fraudulent counterparts.
 
--- NameOrig transaction history analysis
+
+-- NameOrig transaction history vs fraud
 WITH origin_history AS (
     SELECT
         *,
@@ -104,13 +116,14 @@ ORDER BY
 -- most appear only once, while no origin account appears more than three times.
 
 
-
+-- Fraud transactions preview
 SELECT *
 FROM 'PaySim/PS_data.csv'
 WHERE isFraud = 1
 LIMIT 50;
 -- Most fraudulent transactions had newbalanceOrig=0.
 
+-- Zero balance vs fraud
 SELECT
     isFraud,
     COUNT(*) AS transaction_count,
@@ -135,7 +148,7 @@ GROUP BY zero_balance
 ORDER BY fraud_rate DESC;
 -- Only 0.2231% of all zero-balance transactions were fraudulent. This suggests that zero ending balance is a useful fraud risk indicator, but it should not be used as a standalone fraud detection rule.
 
-
+-- Balance mismatch analysis
 SELECT *
 FROM (
     SELECT
@@ -156,7 +169,7 @@ WHERE difference != 0
 ORDER BY ABS(difference) DESC;
 -- Some transactions had oldbalanceOrg - amount != newbalanceOrig.
 
--- Check balance mismatches against fraud occurrence
+-- Check balance mismatches vs fraud occurrence
 SELECT
     isFraud,
     COUNT(*) AS transaction_count,
@@ -170,18 +183,6 @@ GROUP BY isFraud;
 -- While 61.99% of non-fraudulent transactions exhibited a mismatch between the expected and recorded origin balance,
 -- only 0.55% of fraudulent transactions show the same pattern.
 
-
-SELECT
-    type,
-    isFraud,
-    COUNT(*) AS transaction_count,
-    ROUND(AVG(amount), 2) AS avg_amount,
-    ROUND(MIN(amount), 2) AS min_amount,
-    ROUND(MAX(amount), 2) AS max_amount
-FROM 'PaySim/PS_data.csv'
-GROUP BY type, isFraud
-ORDER BY type, isFraud;
--- Fraudulent TRANSFER and CASH_OUT transactions had higher average transaction amounts than their non-fraudulent counterparts.
 
 -- Destination account transaction history
 WITH destination_history AS (
@@ -263,7 +264,7 @@ FROM 'PaySim/PS_data.csv'
 WHERE amount > 10000000;
 --There are 2,443 transactions with amounts exceeding $10 million, and none of them were classified as fraudulent.
 
-
+-- Transactions with exactly $10 million amount vs fraud
 SELECT
     isFraud,
     COUNT(*) AS transaction_count,
@@ -318,7 +319,7 @@ WHERE isFraud = 1
 ORDER BY type, step;
 -- PaySim contains 16 transactions, not classified as isFlaggedFraud but labeled as fraudulent despite having zero transaction amounts and no apparent movement of funds.
 
--- isFlaggedFraud indicator
+-- isFlaggedFraud indicator vs fraud
 SELECT
     isFlaggedFraud,
     COUNT(*) AS transaction_count,
@@ -330,7 +331,7 @@ ORDER BY isFlaggedFraud DESC;
 -- All 16 transactions flagged by the existing fraud detection mechanism were actually fraudulent.
 -- The isFlaggedFraud indicator achieves perfect precision, but extremely low recall.
 
--- Avg amount/oldbalanceOrg
+-- Avg amount/oldbalanceOrg vs fraud
 SELECT
     isFraud,
     ROUND(AVG(CASE WHEN oldbalanceOrg > 0
@@ -341,18 +342,16 @@ GROUP BY isFraud;
 -- On average, the transaction amount of fraudulent is close to the origin account's existing balance.
 -- This finding is consistent with the earlier observation that 98.05% of fraudulent transactions resulted in a zero newbalanceOrig.
 
--- Exceeding balance ratio
+-- Exceeding balance ratio vs fraud
 SELECT
     isFraud,
     COUNT(*) AS transactions,
     SUM(CASE WHEN amount > oldbalanceOrg THEN 1 ELSE 0 END)
         AS amount_exceeds_balance,
-    ROUND(
-        100.0 * SUM(
+    ROUND(100.0 * SUM(
             CASE WHEN amount > oldbalanceOrg THEN 1 ELSE 0 END
-        ) / COUNT(*),
-        4
-    ) AS exceeds_balance_rate
+        ) / COUNT(*),4) 
+        AS exceeds_balance_rate
 FROM 'PaySim/PS_data.csv'
 WHERE type IN ('TRANSFER', 'CASH_OUT', 'PAYMENT')
   AND oldbalanceOrg > 0
