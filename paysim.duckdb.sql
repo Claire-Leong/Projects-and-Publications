@@ -77,7 +77,6 @@ GROUP BY type, isFraud
 ORDER BY type, isFraud;
 -- Fraudulent TRANSFER and CASH_OUT transactions had higher average transaction amounts than their non-fraudulent counterparts.
 
-
 -- NameOrig transaction history vs fraud
 WITH origin_history AS (
     SELECT
