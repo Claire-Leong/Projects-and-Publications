@@ -55,7 +55,7 @@ ORDER BY
 
 
 
--- Type vs Fraud
+-- Type vs fraud
 SELECT
 type,
 COUNT(*) AS total_transactions,
